@@ -3,7 +3,8 @@ use std::fs::File;
 use std::io::SeekFrom;
 use std::io::{Read, Seek};
 
-use super::chunk::Chunk;
+use crate::chunk::Chunk;
+use crate::progress;
 
 #[derive(Debug)]
 pub struct Region {
@@ -17,11 +18,14 @@ impl Region {
         let mut region_file = File::open(region_filename)?;
         let mut chunks: Vec<Chunk> = Vec::new();
 
+        progress::progress_init(1024);
         for i in 0..1024 {
+            progress::PROGRESS_BAR.inc(1);
+
             let mut location_buf = [0u8; 4];
             let mut timestamp_buf = [0u8; 4];
 
-            let location_offset = i * 1024;
+            let location_offset = i * 4;
             region_file.seek(SeekFrom::Start(location_offset))?;
             region_file.read(&mut location_buf)?;
 
@@ -37,9 +41,12 @@ impl Region {
             let chunk_size = u8::from_be(location_buf[3]) as usize * 4096;
             let mut chunk_data_buf: Vec<u8> = vec![0; chunk_size];
             region_file.seek(SeekFrom::Start(chunk_offset))?;
-            region_file.read(&mut chunk_data_buf[..chunk_size])?;
+            region_file.read_exact(&mut chunk_data_buf[..chunk_size])?;
 
-            chunks.push(Chunk::new(BigEndian::read_u32(&timestamp_buf), chunk_data_buf)?);
+            chunks.push(Chunk::new(
+                BigEndian::read_u32(&timestamp_buf),
+                chunk_data_buf,
+            )?);
         }
 
         return Ok(chunks);

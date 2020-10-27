@@ -4,6 +4,7 @@ use std::path::Path;
 mod chunk;
 mod leveldat;
 mod region;
+mod progress;
 
 fn main() -> std::io::Result<()> {
     let yaml = load_yaml!("cli.yml");

@@ -1,24 +1,36 @@
 use clap::{load_yaml, App};
+use log::*;
+use rayon::prelude::*;
+use simplelog::{Config, LevelFilter, TermLogger, TerminalMode};
 use std::path::Path;
 
 mod chunk;
+mod file_ops;
 mod leveldat;
-mod region;
 mod progress;
+mod region;
 
 fn main() -> std::io::Result<()> {
+    TermLogger::init(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap();
+
     let yaml = load_yaml!("cli.yml");
     let args = App::from_yaml(yaml).get_matches();
     let world_dir = args.value_of("world_dir").unwrap();
     let world_dirpath = Path::new(world_dir);
-    println!("Using minecraft world: {}", world_dirpath.to_str().unwrap());
+    info!("Using minecraft world: {}", world_dirpath.to_str().unwrap());
 
     let leveldat_filename = world_dirpath.join("level.dat");
     let leveldat = leveldat::LevelDat::new(leveldat_filename.to_str().unwrap())?;
-    println!("Minecraft version: {:?}", leveldat.version());
+    info!("Minecraft version: {:?}", leveldat.version());
 
-    let region_filename = world_dirpath.join("region/r.0.0.mca");
-    let region = region::Region::new(&region_filename.to_str().unwrap())?;
+    let region_dirpath = world_dirpath.join("region/");
+    let region_files = file_ops::get_all_files(&region_dirpath)?;
+    progress::progress_init(region_files.len() as u64 * 1024, "Loading chunks");
+    let regions = region_files
+        .par_iter()
+        .map(|region_filename| region::Region::new(&region_filename.to_str().unwrap()).unwrap())
+        .collect::<Vec<_>>();
+    progress::PROGRESS_BAR.finish();
 
     return Ok(());
 }

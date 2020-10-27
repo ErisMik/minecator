@@ -1,8 +1,6 @@
-extern crate nbt;
-
 use byteorder::{BigEndian, ByteOrder};
+use nbt;
 use std::io::Cursor;
-use std::io::Read;
 
 #[derive(Debug)]
 pub struct Chunk {

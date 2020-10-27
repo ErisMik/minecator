@@ -1,6 +1,4 @@
-extern crate nbt;
-extern crate serde_json;
-
+use nbt;
 use std::fs::File;
 
 #[derive(Debug)]
@@ -32,13 +30,4 @@ impl LevelDat {
             return None;
         }
     }
-
-    // pub fn pretty_print(&self) {
-    //     match serde_json::to_string_pretty(&self.blob) {
-    //         Ok(json) => println!("{}", json),
-    //         Err(e) => {
-    //             eprintln!("error: {}", e);
-    //         }
-    //     }
-    // }
 }

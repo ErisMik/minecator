@@ -6,14 +6,15 @@ lazy_static! {
         let progress_bar = ProgressBar::new(0);
         progress_bar.set_style(
             ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] [{bar:40.green/blue}] {pos}/{len} ({eta})"),
+                .template("[{elapsed_precise}] [{bar:40.green/blue}] {pos}/{len} ({eta}) - {msg}"),
         );
         progress_bar
     };
 }
 
-pub fn progress_init(length: u64) {
+pub fn progress_init(length: u64, msg: &str) {
     PROGRESS_BAR.set_length(length);
-    PROGRESS_BAR.set_draw_delta(length / 1000);
+    PROGRESS_BAR.set_message(msg);
+    PROGRESS_BAR.set_draw_delta(length / 100);
     PROGRESS_BAR.set_position(0);
 }

@@ -4,11 +4,9 @@ use rayon::prelude::*;
 use simplelog::{Config, LevelFilter, TermLogger, TerminalMode};
 use std::path::Path;
 
-mod chunk;
 mod file_ops;
-mod leveldat;
+mod minecraft;
 mod progress;
-mod region;
 
 fn main() -> std::io::Result<()> {
     TermLogger::init(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap();
@@ -20,7 +18,7 @@ fn main() -> std::io::Result<()> {
     info!("Using minecraft world: {}", world_dirpath.to_str().unwrap());
 
     let leveldat_filename = world_dirpath.join("level.dat");
-    let leveldat = leveldat::LevelDat::new(leveldat_filename.to_str().unwrap())?;
+    let leveldat = minecraft::leveldat::LevelDat::new(leveldat_filename.to_str().unwrap())?;
     info!("Minecraft version: {:?}", leveldat.version());
 
     let region_dirpath = world_dirpath.join("region/");
@@ -28,7 +26,9 @@ fn main() -> std::io::Result<()> {
     progress::progress_init(region_files.len() as u64 * 1024, "Loading chunks");
     let regions = region_files
         .par_iter()
-        .map(|region_filename| region::Region::new(&region_filename.to_str().unwrap()).unwrap())
+        .map(|region_filename| {
+            minecraft::region::Region::new(&region_filename.to_str().unwrap()).unwrap()
+        })
         .collect::<Vec<_>>();
     progress::PROGRESS_BAR.finish();
 

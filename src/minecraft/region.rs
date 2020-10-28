@@ -1,10 +1,9 @@
 use byteorder::{BigEndian, ByteOrder};
-use log::*;
 use std::fs::File;
 use std::io::SeekFrom;
 use std::io::{Read, Seek};
 
-use crate::chunk::Chunk;
+use crate::minecraft::chunk::Chunk;
 use crate::progress;
 
 #[derive(Debug)]

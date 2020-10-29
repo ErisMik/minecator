@@ -7,6 +7,7 @@ use std::path::Path;
 mod file_ops;
 mod minecraft;
 mod progress;
+mod render;
 
 fn main() -> std::io::Result<()> {
     TermLogger::init(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap();

@@ -33,5 +33,7 @@ fn main() -> std::io::Result<()> {
         .collect::<Vec<_>>();
     progress::PROGRESS_BAR.finish();
 
+    // render::render::main();
+
     return Ok(());
 }

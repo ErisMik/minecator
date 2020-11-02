@@ -1,3 +1,1 @@
-mod render;
-mod cube;
-mod camera;
+pub mod render;

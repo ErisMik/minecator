@@ -8,9 +8,9 @@ use crate::progress;
 
 #[derive(Debug)]
 pub struct Region {
-    x: i64,
-    z: i64,
-    chunks: Vec<Chunk>,
+    pub x: i64,
+    pub z: i64,
+    pub chunks: Vec<Chunk>,
 }
 
 impl Region {

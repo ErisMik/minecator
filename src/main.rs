@@ -27,13 +27,14 @@ fn main() -> std::io::Result<()> {
     progress::progress_init(region_files.len() as u64 * 1024, "Loading chunks");
     let regions = region_files
         .par_iter()
+        // .iter()
         .map(|region_filename| {
             minecraft::region::Region::new(&region_filename.to_str().unwrap()).unwrap()
         })
         .collect::<Vec<_>>();
     progress::PROGRESS_BAR.finish();
 
-    // render::render::main();
+    render::render::render_chunk(regions[0].chunks[0].clone());
 
     return Ok(());
 }

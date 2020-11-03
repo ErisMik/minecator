@@ -1,28 +1,17 @@
 extern crate serde_json;
 
 use byteorder::{BigEndian, ByteOrder};
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use log::*;
 use nbt;
 use std::io::Cursor;
 
-#[derive(Hash, PartialEq, Eq, Debug)]
-pub struct Coordinate {
-    y: i64,
-    x: i64,
-    z: i64,
-}
+use crate::minecraft::block::{Block, Coordinate};
 
 #[derive(Clone, Debug)]
-pub struct Block {
-    id: String,
-    properties: HashMap<String, String>,
-}
-
-#[derive(Debug)]
 pub struct Chunk {
-    timestamp: u32,
-    blocks: HashMap<Coordinate, Block>,
+    pub timestamp: u32,
+    pub blocks: HashMap<Coordinate, Block>,
 }
 
 impl Chunk {
@@ -48,10 +37,15 @@ impl Chunk {
                                 for section in sections {
                                     match section {
                                         nbt::Value::Compound(section) => {
-                                            let y = Chunk::get_y_coord(section);
+                                            let y_idx = Chunk::get_y_index(section);
                                             let palette = Chunk::get_palette(section);
 
-                                            blocks = Chunk::get_blocks(y, &palette, section);
+                                            Chunk::add_section_blocks(
+                                                &mut blocks,
+                                                y_idx,
+                                                &palette,
+                                                section,
+                                            );
                                         }
                                         _ => {}
                                     }
@@ -71,49 +65,72 @@ impl Chunk {
         });
     }
 
-    fn get_blocks(y: i8, palette: &Vec<Block>, section: &nbt::Map<String, nbt::Value>) -> HashMap<Coordinate, Block> {
-        let mut blocks: HashMap<Coordinate, Block> = HashMap::new();
-
+    fn add_section_blocks(
+        blocks: &mut HashMap<Coordinate, Block>,
+        y_idx: i8,
+        palette: &Vec<Block>,
+        section: &nbt::Map<String, nbt::Value>,
+    ) {
         if let Some(blockstates) = section.get("BlockStates") {
             match blockstates {
                 nbt::Value::LongArray(blockstates) => {
-                    let size = blockstates.len() * 64;
-                    let bit_width = size / 4096;
+                    let IGNORED_BLOCKTYPES: HashSet<&'static str> =
+                        ["minecraft:air", "minecraft:cave_air"]
+                            .iter()
+                            .cloned()
+                            .collect();
 
-                    let base: i128 = 2;
-                    let mut bitmask: i128 = 0;
+                    let bit_width = (palette.len() as f64).log2() as usize;
+                    let bit_width = if bit_width < 4 { 4 } else { bit_width };
+
+                    let base: u128 = 2;
+                    let mut bitmask: u128 = 0;
                     for i in 0..bit_width {
                         bitmask += base.pow(i as u32);
                     }
-                    let bitmask = bitmask;
+                    let bitmask: u128 = bitmask;
                     let mut bitmask_shift = 0;
 
+                    let mut blockcount: isize = 0;
                     let mut i = 1;
                     while i < blockstates.len() {
-                        let lower_blockstates = i64::from_be(blockstates[0]) as i128;
-                        let upper_blockstates = i64::from_be(blockstates[1]) as i128;
+                        let lower_blockstates = i64::from_be(blockstates[i - 1]) as u128;
+                        let upper_blockstates = i64::from_be(blockstates[i]) as u128;
 
-                        let blockstates_chunk = lower_blockstates + (upper_blockstates << 64);
+                        let blockstates_chunk = (upper_blockstates << 64) | lower_blockstates;
 
-                        let mut x = 0;
-                        while bitmask_shift <= (128 - bit_width) {
+                        while bitmask_shift <= (128 - 1 - bit_width) {
+                            // info!("bitmask_shift {}", bitmask_shift);
                             let shifted_bitmask = bitmask << bitmask_shift;
-                            let index = ((blockstates_chunk & shifted_bitmask) >> bitmask_shift) as usize;
+                            let index =
+                                ((blockstates_chunk & shifted_bitmask) >> bitmask_shift) as usize;
 
                             if index < palette.len() {
                                 let block = &palette[index];
-                                let coord = Coordinate {
-                                    y: y as i64,
-                                    x: (x % 16) as i64,
-                                    z: ((i / 16) % 16) as i64,
-                                };
-                                blocks.insert(coord, block.clone());
+                                if !IGNORED_BLOCKTYPES.contains::<str>(&block.id.to_string()) {
+                                    let coord = Coordinate {
+                                        x: (blockcount % 16) as i64,
+                                        z: ((blockcount / 16) % 16) as i64,
+                                        y: (((blockcount / (16 * 16)) % 16) + (y_idx as isize * 16))
+                                            as i64,
+                                    };
+                                    // warn!("{} {} {}", coord.y, coord.z, coord.x);
+                                    blocks.insert(coord, block.clone());
+                                }
                             } else {
-                                //TODO: Figure out why these are missing
-                                // warn!("Palette miss");
+                                // TODO: Find out why these are missing the palette!
+                                // warn!(
+                                //     "Palette miss: bit_width {}, bitmask_shift {}, blockcount {}, index {}, max {}",
+                                //     bit_width,
+                                //     bitmask_shift,
+                                //     blockcount,
+                                //     index,
+                                //     palette.len()
+                                // );
                             }
+
+                            blockcount += 1;
                             bitmask_shift += bit_width;
-                            x += 1;
                         }
                         bitmask_shift -= 64;
                         i += 1;
@@ -122,11 +139,9 @@ impl Chunk {
                 _ => {}
             }
         }
-
-        return blocks;
     }
 
-    fn get_y_coord(section: &nbt::Map<String, nbt::Value>) -> i8 {
+    fn get_y_index(section: &nbt::Map<String, nbt::Value>) -> i8 {
         let y: i8 = match section.get("Y") {
             Some(y) => match y {
                 nbt::Value::Byte(y) => *y,

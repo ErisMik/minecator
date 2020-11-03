@@ -74,7 +74,7 @@ impl Chunk {
         if let Some(blockstates) = section.get("BlockStates") {
             match blockstates {
                 nbt::Value::LongArray(blockstates) => {
-                    let IGNORED_BLOCKTYPES: HashSet<&'static str> =
+                    let ignored_blocktypes: HashSet<&'static str> =
                         ["minecraft:air", "minecraft:cave_air"]
                             .iter()
                             .cloned()
@@ -99,15 +99,16 @@ impl Chunk {
 
                         let blockstates_chunk = (upper_blockstates << 64) | lower_blockstates;
 
-                        while bitmask_shift <= (128 - 1 - bit_width) {
+                        while bitmask_shift <= (128 - bit_width) {
                             // info!("bitmask_shift {}", bitmask_shift);
                             let shifted_bitmask = bitmask << bitmask_shift;
                             let index =
                                 ((blockstates_chunk & shifted_bitmask) >> bitmask_shift) as usize;
 
+                            // warn!("blockcount {}", blockcount);
                             if index < palette.len() {
                                 let block = &palette[index];
-                                if !IGNORED_BLOCKTYPES.contains::<str>(&block.id.to_string()) {
+                                if !ignored_blocktypes.contains::<str>(&block.id.to_string()) {
                                     let coord = Coordinate {
                                         x: (blockcount % 16) as i64,
                                         z: ((blockcount / 16) % 16) as i64,

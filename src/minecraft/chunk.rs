@@ -1,5 +1,3 @@
-extern crate serde_json;
-
 use byteorder::{BigEndian, ByteOrder};
 use hashbrown::{HashMap, HashSet};
 use log::*;
@@ -12,6 +10,7 @@ use crate::minecraft::block::{Block, Coordinate};
 pub struct Chunk {
     pub timestamp: u32,
     pub blocks: HashMap<Coordinate, Block>,
+    pub palette: HashSet<Block>,
 }
 
 impl Chunk {
@@ -27,6 +26,7 @@ impl Chunk {
         };
 
         let mut blocks: HashMap<Coordinate, Block> = HashMap::new();
+        let mut chunk_palette: HashSet<Block> = HashSet::new();
 
         if let Some(level) = nbt_data.get("Level") {
             match level {
@@ -46,6 +46,13 @@ impl Chunk {
                                                 &palette,
                                                 section,
                                             );
+
+                                            let palette_set: HashSet<Block> =
+                                                palette.iter().cloned().collect();
+                                            chunk_palette = chunk_palette
+                                                .union(&palette_set)
+                                                .cloned()
+                                                .collect();
                                         }
                                         _ => {}
                                     }
@@ -62,6 +69,7 @@ impl Chunk {
         return Ok(Chunk {
             timestamp: timestamp,
             blocks: blocks,
+            palette: chunk_palette,
         });
     }
 

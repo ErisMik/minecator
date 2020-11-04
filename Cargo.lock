@@ -719,6 +719,7 @@ checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
 dependencies = [
  "ahash",
  "rayon",
+ "serde",
 ]
 
 [[package]]
@@ -1000,6 +1001,7 @@ dependencies = [
  "nom",
  "png",
  "rayon",
+ "serde",
  "serde_json",
  "simplelog",
 ]

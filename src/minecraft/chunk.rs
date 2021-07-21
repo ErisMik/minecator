@@ -6,15 +6,29 @@ use std::io::Cursor;
 
 use crate::minecraft::block::{Block, Coordinate};
 
+pub const CHUNK_HEIGHT: u32 = 256;
+pub const CHUNK_WIDTH: u32 = 16;
+
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub struct ChunkCoordinate {
+    pub x: u32,
+    pub z: u32,
+}
+
 #[derive(Clone, Debug)]
 pub struct Chunk {
+    pub coordinate: ChunkCoordinate,
     pub timestamp: u32,
     pub blocks: HashMap<Coordinate, Block>,
     pub palette: HashSet<Block>,
 }
 
 impl Chunk {
-    pub fn new(timestamp: u32, data: Vec<u8>) -> std::io::Result<Chunk> {
+    pub fn new(
+        coordinate: ChunkCoordinate,
+        timestamp: u32,
+        data: Vec<u8>,
+    ) -> std::io::Result<Chunk> {
         let chunk_length = BigEndian::read_u32(&data[0..4]) as usize;
         let compression_type = u8::from_be(data[4]);
         let mut data_reader = Cursor::new(&data[5..chunk_length]);
@@ -67,8 +81,9 @@ impl Chunk {
         }
 
         return Ok(Chunk {
-            timestamp: timestamp,
-            blocks: blocks,
+            coordinate,
+            timestamp,
+            blocks,
             palette: chunk_palette,
         });
     }

@@ -1,7 +1,7 @@
 use log::*;
 use std::path::PathBuf;
 
-pub fn get_all_files(src: &PathBuf) -> std::io::Result<Vec<PathBuf>> {
+pub fn get_all_files(src: PathBuf) -> std::io::Result<Vec<PathBuf>> {
     let dir = src.read_dir()?;
     let mut files = Vec::new();
 

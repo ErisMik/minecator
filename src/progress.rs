@@ -12,9 +12,8 @@ lazy_static! {
     };
 }
 
-pub fn progress_init(length: u64, msg: &str) {
+pub fn progress_init(length: u64, msg: String) {
     PROGRESS_BAR.set_length(length);
     PROGRESS_BAR.set_message(msg);
-    // PROGRESS_BAR.set_draw_delta(length / 1000);
     PROGRESS_BAR.set_position(0);
 }

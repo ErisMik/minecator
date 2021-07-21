@@ -1,6 +1,5 @@
-extern crate serde_json;
-
 use hashbrown::HashMap;
+use serde_json;
 use std::hash::Hash;
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
